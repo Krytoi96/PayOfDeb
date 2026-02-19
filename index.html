@@ -1,59 +1,144 @@
 <!DOCTYPE HTML>
 <html>
-      <title>PayOfDeb
-      </title>
-    <head>
-  <link rel="stylesheet" href="../css/styles.css">
-</head>
+<head>
+    <title>PayOfDeb - Рабочий календарь</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
     <div class="container">
-        <div class="calendar">
-            <h3>РАБОЧИЙ КАЛЕНДАРЬ
-            </h3>
-            <table>
-                <select id="monthSelect">
-                    <option value="0">Январь</option>
-                    <option value="1">Февраль</option>
-                    <option value="2">Март</option>
-                    <option value="3">Апрель</option>
-                    <option value="4">Май</option>
-                    <option value="5">Июнь</option>
-                    <option value="6">Июль</option>
-                    <option value="7">Август</option>
-                    <option value="8">Сентябрь</option>
-                    <option value="9">Октябрь</option>
-                    <option value="10">Ноябрь</option>
-                    <option value="11">Декабрь</option>
+        <div class="settings-panel">
+            <h3>⚙️ Настройки</h3>
+            
+            <div class="control-group">
+                <label>Тип графика:</label>
+                <select id="scheduleType" onchange="toggleScheduleSettings()">
+                    <option value="5-2">Стандартный 5/2</option>
+                    <option value="2-2">Сменный 2/2</option>
                 </select>
-                <select id="yearSelect">
-                    <option value="2026">2026</option>
+            </div>
+
+            <div id="shiftSettings" style="display: none; background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <label style="color: #0277bd;">Дата первой смены:</label>
+                <input type="date" id="cycleStartDate" onchange="saveSettings()">
+            </div>
+
+            <div class="control-group">
+                <label>Оклад (руб):</label>
+                <input type="number" id="salaryInput" value="50000">
+            </div>
+            
+            <div class="control-group">
+                <label>Норма часов (авто):</label>
+                <input type="number" id="normHoursInput" value="164" readonly style="background: #f0f0f0;">
+            </div>
+
+            <hr>
+            <h4>⏰ Стандартный день</h4>
+            <div class="time-inputs-row">
+                <input type="time" id="settingStart" value="09:00" onchange="saveSettings()"> - 
+                <input type="time" id="settingEnd" value="18:00" onchange="saveSettings()">
+            </div>
+            
+            <div class="control-group" style="margin-top: 10px;">
+                <label>Множитель переработки:</label>
+                <select id="overtimeMultiplier" onchange="saveSettings()">
+                    <option value="1.5">x1.5</option>
+                    <option value="2" selected>x2.0</option>
                 </select>
-                <!-- <select id="scheduleSelect">
-                    <option value="none"selected>Отсутвует</option>
-                    <option value="2/2">2/2</option>
-                    <option value="5/2">5/2</option>
-                </select> -->
-                <!-- <select id="startDay">
-                <option value="1">1 число</option>
-                <option value="5">5 число</option>
-                <option value="15">15 число</option> -->
-                </select>
+            </div>
+
+            <div class="stats-box">
+                <p>Ставка в час: <strong id="hourRate">0.00</strong> руб.</p>
+                <hr>
+                <p>Часы: <strong id="totalHoursMonth" style="color: #007bff;">0</strong></p>
+                <p style="font-size: 0.9em; color: #dc3545;">Переработка: <span id="totalOvertimeMonth">0</span> ч.</p>
+                <p>Зарплата: <strong id="totalMoneyMonth" style="color: #28a745; font-size: 1.4em;">0</strong> руб.</p>
+            </div>
+
+            <hr>
+            <h4>⚡ Действия</h4>
+            <button class="btn-primary" onclick="fillMonth()">Заполнить по графику</button>
+            <button class="btn-danger" onclick="clearMonthData()">Очистить всё</button>
+        </div>
+
+        <div class="calendar-wrapper">
+            <div class="calendar-header">
+                <h3>🗓 РАБОЧИЙ КАЛЕНДАРЬ</h3>
+                <div class="selectors">
+                    <select id="monthSelect">
+                        <option value="0">Январь</option>
+                        <option value="1">Февраль</option>
+                        <option value="2">Март</option>
+                        <option value="3">Апрель</option>
+                        <option value="4">Май</option>
+                        <option value="5">Июнь</option>
+                        <option value="6">Июль</option>
+                        <option value="7">Август</option>
+                        <option value="8">Сентябрь</option>
+                        <option value="9">Октябрь</option>
+                        <option value="10">Ноябрь</option>
+                        <option value="11">Декабрь</option>
+                    </select>
+                    <select id="yearSelect"></select>
+                </div>
+            </div>
+            
+            <table class="calendar-table">
                 <thead>
                     <tr><th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th></tr>
                 </thead>
                 <tbody id="days"></tbody>
             </table>
         </div>
-        <!-- <div class="form-panel">
-            <h4>Заполните рабочий день</h4>
-            <input type="text" placeholder="Заметка 1">
-            <input type="text" placeholder="Заметка 2">
-            <input type="text" placeholder="Заметка 3">
-        </div> -->
     </div>
 
-    <script src="../js/generateCalendar.js">
-    </script>
-    </body>
+    <div id="dayModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3 id="modalDateTitle">Дата</h3>
+            
+            <div id="weekendBlock" style="display:none; background: #ffe6e6; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                <label style="color: #d9534f; font-weight: bold;">
+                    <input type="checkbox" id="isWorkedCheckbox" onchange="toggleWorkInputs()"> 
+                    <span id="holidayLabel">Работа в выходной</span>
+                </label>
+            </div>
+
+            <div id="workInputsBlock">
+                <div class="input-row">
+                    <label>Начало:</label>
+                    <input type="time" id="modalStart">
+                </div>
+                <div class="input-row">
+                    <label>Конец:</label>
+                    <input type="time" id="modalEnd">
+                </div>
+                <div class="input-row">
+                    <label>Перерыв (мин):</label>
+                    <input type="number" id="modalBreak" value="60" step="10">
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                
+                <div class="input-row">
+                    <label>Всего часов:</label>
+                    <span id="modalTotalHours" style="font-weight: bold;">0</span>
+                </div>
+                
+                <div class="input-row" style="background: #fff3cd; padding: 5px; border-radius: 4px;">
+                    <label>Оплатить как x2:</label>
+                    <input type="number" id="modalOvertime" step="0.5" style="width: 60px; font-weight: bold; color: #d39e00;">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-save" onclick="saveDayData()">Сохранить</button>
+                <button class="btn-delete" onclick="deleteDayData()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/generateCalendar.js"></script>
+</body>
 </html>
